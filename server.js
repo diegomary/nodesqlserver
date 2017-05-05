@@ -1,5 +1,4 @@
 'use strict';
-
 let express = require('express');
 let app = express();
 let sql = require("mssql");
@@ -25,24 +24,28 @@ app.get('/', function (req, res, next) {
                                 orders inner join  [Order Details] on orders.orderid=[Order Details].orderid
                                 inner join Products on [Order Details].ProductID = Products.ProductID;`, (err, rs) => {
                     if (err) console.log(err);
-                    let oId = rsorders.recordset;
-                    //let order = {};
+                    let oId = rsorders.recordset;                   
                     for (let id of oId) {
-
                         let documents = rs.recordset.filter(function (doc) {
                             return (doc.OrderID === id.OrderID);
                         });
 
-                        id.orderdetails = documents;
-                       // console.log(id.OrderID);                   
+                        id.orderdetails = {};
+                        id.orderdetails.OrderID = documents[0].OrderID;
+                        id.orderdetails.OrderDate = documents[0].OrderDate;
+                        id.orderdetails.ShipCity = documents[0].ShipCity;                        
 
-                    }
-                    //console.log(rsorders);
+                        id.orderdetails.products = [];
+                        for (let dc of documents) {
+                            delete dc.OrderID;delete dc.OrderDate;delete dc.ShipCity;
+                            id.orderdetails.products.push(dc);
+                        }
+
+                        delete id.OrderID;
+                    }                    
                     res.send(oId);                    
                     sql.close();
-                } )              
-
-           
+                })           
         })
     })
   
