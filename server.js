@@ -2,10 +2,13 @@
 let express = require('express');
 let app = express();
 let sqlconn = require("mssql");
-// config for your database
+// Mongodb Credentials
+let MongoClient = require('mongodb');
+let mongoUrl = 'moxxxdb://booksadmin:dxxxxmary@ds061371.moxxxab.com:61371/xxxxxxx88';
+// SQL Server express credentials database
 var config = {
     user: 'sa',
-    password: 'diegomary',
+    password: 'xxxxxxx',
     server: 'localhost\\SQLEXPRESS',
     database: 'northwind'
 };
@@ -17,9 +20,10 @@ function connect() {
             if (err) reject(err);
             else {
                 let request = new sqlconn.Request();
-                request.query(`select Customers.CustomerID,Customers.ContactName, Orders.OrderID, Orders.OrderDate,
+                request.query(`select Customers.CustomerID,Customers.CompanyName,Customers.ContactName,
+                Customers.ContactTitle,Orders.OrderID, Orders.OrderDate,
                 [Order Details].ProductID ,[Order Details].Quantity,[Order Details].Discount,
-                Products.ProductID, Products.ProductName, Products.UnitPrice, Categories.CategoryName,
+                Products.ProductName, Products.UnitPrice, Categories.CategoryName,
                 Categories.Description from Customers inner join Orders on 
                 customers.CustomerID = orders.CustomerID inner join
                 [Order Details] on orders.OrderID = [Order Details].OrderID inner join Products on
@@ -41,7 +45,9 @@ function connect() {
                         
                         let documentCustomer = {};
                         documentCustomer.CustomerID = id;
-                        documentCustomer.ContactName = documents[0].ContactName;
+                        documentCustomer.CompanyName = documents[0].CompanyName;
+                        documentCustomer.ContactName = documents[0].ContactName;                       
+                        documentCustomer.ContactTitle = documents[0].ContactTitle;
 
                         // work on documents now
                         let orderCollection = [];                       
@@ -54,11 +60,19 @@ function connect() {
                             let ord = documents.filter(function (doc) {
                                 return (doc.OrderID === oid);
                             });
-                            orderCollection.push(ord);
+                            orderCollection.push({ OrderID: ord[0].OrderID, OrderDate: ord[0].OrderDate, Detail: ord });
+                            ord.map(function (item) {
+                                delete item.OrderDate;
+                                delete item.CustomerID;
+                                delete item.ContactName;
+                                delete item.OrderID;
+                                delete item.CompanyName;
+                                delete item.ContactTitle;
+                                return item;
+                            });
                         }
                         documentCustomer.orders = orderCollection;
-                        customerCollection.push(documentCustomer);
-                        break;
+                        customerCollection.push(documentCustomer);                        
                     }
 
                     // Use the spread operator to transform a set into an Array.
@@ -77,7 +91,15 @@ app.get('/', function (req, res, next) {
     connect()
         .then(
         function (data) {
-            res.send(data); sqlconn.close();}
+            MongoClient.connect(mongoUrl, function (err, db) {
+                db.collection('northwind').drop();
+                db.createCollection("northwind");      
+                db.collection('northwind').insert(data);                
+
+            });
+            res.send('The Data have been moved to MongoDB database in NoSqlFormat');
+            sqlconn.close();
+        }
         ).then(function () { console.log('Finished') })
         .catch(function (error) {res.send(error) });
 
