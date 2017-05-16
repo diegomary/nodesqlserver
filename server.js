@@ -4,13 +4,14 @@ let app = express();
 let sqlconn = require("mssql");
 // Mongodb Credentials
 let MongoClient = require('mongodb');
-let mongoUrl = 'moxxxdb://booksadmin:dxxxxmary@ds061371.moxxxab.com:61371/xxxxxxx88';
-// SQL Server express credentials database
+let mongoUrl = 'mongodb://booksadmin:dxxxxary@ds061371.mongolab.com:61371/dixxxxxy8x';
+// SQL Server express credentials database remember to install Sqlexpress as default instance so you can use localhost
 var config = {
     user: 'sa',
-    password: 'xxxxxxx',
-    server: 'localhost\\SQLEXPRESS',
-    database: 'northwind'
+    password: 'password',
+    server: 'localhost',
+    database: 'northwind',
+    port:1433
 };
 
 function connect() {
@@ -92,6 +93,7 @@ app.get('/', function (req, res, next) {
         .then(
         function (data) {
             MongoClient.connect(mongoUrl, function (err, db) {
+                console.log(data);
                 db.collection('northwind').drop();
                 db.createCollection("northwind");      
                 db.collection('northwind').insert(data);                
